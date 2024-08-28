@@ -1,0 +1,11 @@
+@OtelTester_HostAddress = http://localhost:5270
+
+GET {{OtelTester_HostAddress}}/todos/
+Accept: application/json
+
+###
+
+GET {{OtelTester_HostAddress}}/todos/1
+Accept: application/json
+
+###

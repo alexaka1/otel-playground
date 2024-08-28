@@ -1,0 +1,8 @@
+﻿services:
+  oteltester:
+    image: oteltester
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5270:8080"

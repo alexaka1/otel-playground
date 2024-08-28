@@ -363,3 +363,4 @@ FodyWeavers.xsd
 
 ### macOS
 .DS_Store
+/.idea/.idea.OtelTester/Docker/docker-compose.generated.override.yml
