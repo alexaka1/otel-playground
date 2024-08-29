@@ -8,13 +8,17 @@
 ## Running
 
 Normal:
+
 ```bash
 docker compose up -d
 ```
+
 AoT:
+
 ```bash
 docker compose -f compose.yaml -f docker-compose.prod.yaml up -d
 ```
+
 ## Aspire Dashboard
 
 Navigate to http://localhost:18888/

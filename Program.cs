@@ -5,6 +5,8 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using OtelTester;
+using Serilog;
+using Serilog.Debugging;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -17,12 +19,15 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddOptions<Settings>()
     .Bind(builder.Configuration.GetSection(Settings.Key));
 
+builder.Services.AddMeters();
+
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resourceBuilder =>
-        resourceBuilder.AddService("OtelTester"))
+        resourceBuilder.AddService(DiagnosticsConfig.ServiceName))
     .WithMetrics(metrics =>
     {
         metrics.AddAspNetCoreInstrumentation();
+        metrics.AddMeter(DiagnosticsConfig.MyMeter);
         metrics.AddOtlpExporter();
     })
     .WithTracing(tracing =>
@@ -32,7 +37,8 @@ builder.Services.AddOpenTelemetry()
     })
     ;
 builder.Logging.ClearProviders();
-var settings = builder.Configuration.GetValue<Settings>(Settings.Key) ?? throw new InvalidOperationException("Settings not found");
+var settings = builder.Configuration.GetSection(Settings.Key).Get<Settings>() ??
+               throw new InvalidOperationException("Settings not found");
 if (settings.LogProvider.HasFlag(LogProvider.OpenTelemetry))
 {
     builder.Logging.AddOpenTelemetry(options =>
@@ -44,7 +50,23 @@ if (settings.LogProvider.HasFlag(LogProvider.OpenTelemetry))
     });
 }
 
+if (settings.LogProvider.HasFlag(LogProvider.Serilog))
+{
+    SelfLog.Enable(Console.Out);
+    builder.Services.AddSerilog(configuration =>
+    {
+        configuration.MinimumLevel.Information()
+            .WriteTo.Console()
+            .WriteTo.Seq("http://oteltester.seq:5341", apiKey: "x")
+            .Enrich.FromLogContext();
+    });
+}
+
 var app = builder.Build();
+if (settings.LogProvider.HasFlag(LogProvider.Serilog))
+{
+    app.UseSerilogRequestLogging();
+}
 
 var sampleTodos = new Todo[]
 {
@@ -56,13 +78,15 @@ var sampleTodos = new Todo[]
 };
 
 var todosApi = app.MapGroup("/todos");
-todosApi.MapGet("/", (ILogger<Program> logger) =>
+todosApi.MapGet("/", (ILogger<Program> logger, MyMeters meter) =>
 {
     logger.LogInformation("Todo length: {Length}", sampleTodos.Length);
+    meter.Counter.Add(1,
+        [new KeyValuePair<string, object?>("date", DateTime.Now)]);
     return sampleTodos.AsEnumerable();
 });
 todosApi.MapGet("/{id:int}",
-    IResult (int id, ILogger<Program> logger) =>
+    IResult (int id, ILogger<Program> logger, MyMeters meter) =>
     {
         logger.LogInformation("Called with id: {Id}", id);
         var todo = sampleTodos.FirstOrDefault(a => a.Id == id);
@@ -70,6 +94,9 @@ todosApi.MapGet("/{id:int}",
         {
             return TypedResults.NotFound();
         }
+
+        meter.Histogram.Record(Random.Shared.Next(),
+            [new KeyValuePair<string, object?>("todo.id", todo.Id)]);
 
         logger.LogInformation("Returned: {@Todo}", todo);
         return TypedResults.Json(todo, AppJsonSerializerContext.Default.Todo);

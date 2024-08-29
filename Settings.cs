@@ -2,9 +2,8 @@ namespace OtelTester;
 
 public class Settings
 {
-    public const string Key = "Settings";
-
     public LogProvider LogProvider { get; set; }
+    public const string Key = "Settings";
 }
 
 [Flags]

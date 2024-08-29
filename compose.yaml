@@ -17,6 +17,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       - oteltester.dashboard
+      - oteltester.seq
   oteltester.dashboard:
     image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
     ports:
@@ -25,5 +26,16 @@ services:
     environment:
       # This should be local only
       - DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true
+  oteltester.seq:
+    image: datalust/seq:latest
+    ports:
+      - "5341:80"
+    <<: *default-network
+    environment:
+      - ACCEPT_EULA=Y
+    volumes:
+      - seq:/data
 networks:
   otel:
+volumes:
+  seq:
