@@ -48,7 +48,7 @@ builder.Services.AddSerilog((sp, configuration) =>
         // regular logs
         .WriteTo.Console()
         .WriteTo.Seq("http://oteltester.seq:5341", apiKey: "x")
-        // also send logs to OpenTelemetry
+        // also send logs to OpenTelemetry, optional
         .WriteTo.OpenTelemetry(o =>
         {
             o.ResourceAttributes = new Dictionary<string, object>

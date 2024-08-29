@@ -1,5 +1,8 @@
 # OTLP playground
 
+https://www.youtube.com/watch?v=tctadmNTHfU
+https://www.youtube.com/watch?v=HrRrJ5wTtdk
+
 ## Prerequisites
 
 - Docker
@@ -10,29 +13,24 @@
 Normal:
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
 AoT:
 
 ```bash
-docker compose -f compose.yaml -f docker-compose.prod.yaml up -d
+docker compose -f compose.yaml -f docker-compose.prod.yaml up -d --build
 ```
 
-## Aspire Dashboard
+## Dashboards
 
-Navigate to http://localhost:18888/
+- [Aspire Dashboard](http://localhost:18888/)
+- [Seq logs](http://localhost:5341/)
 
-## Testing
+## Call these a couple of times
 
 ```bash
 curl -X GET http://localhost:5270/todos
-```
-
-```bash
 curl -X GET http://localhost:5270/todos/1
-```
-
-```bash
 curl -X GET http://localhost:5270/todos/2
 ```
