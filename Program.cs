@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -9,6 +8,8 @@ using Serilog;
 using Serilog.Debugging;
 
 var builder = WebApplication.CreateSlimBuilder(args);
+builder.Services.AddSingleton<VersionProvider>();
+var version = new VersionProvider();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -16,14 +17,13 @@ builder.Services.ConfigureHttpJsonOptions(options =>
         AppJsonSerializerContext.Default);
 });
 
-builder.Services.AddOptions<Settings>()
-    .Bind(builder.Configuration.GetSection(Settings.Key));
-
 builder.Services.AddMeters();
 
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resourceBuilder =>
-        resourceBuilder.AddService(DiagnosticsConfig.ServiceName))
+        // no DI here :(
+        resourceBuilder.AddService(DiagnosticsConfig.ServiceName,
+            serviceVersion: version.Version))
     .WithMetrics(metrics =>
     {
         metrics.AddAspNetCoreInstrumentation();
@@ -37,36 +37,33 @@ builder.Services.AddOpenTelemetry()
     })
     ;
 builder.Logging.ClearProviders();
-var settings = builder.Configuration.GetSection(Settings.Key).Get<Settings>() ??
-               throw new InvalidOperationException("Settings not found");
-if (settings.LogProvider.HasFlag(LogProvider.OpenTelemetry))
-{
-    builder.Logging.AddOpenTelemetry(options =>
-    {
-        options.IncludeScopes = true;
-        options.IncludeFormattedMessage = true;
-        options.ParseStateValues = true;
-        options.AddOtlpExporter();
-    });
-}
 
-if (settings.LogProvider.HasFlag(LogProvider.Serilog))
+SelfLog.Enable(Console.Out);
+// regular Serilog logging
+builder.Services.AddSerilog((sp, configuration) =>
 {
-    SelfLog.Enable(Console.Out);
-    builder.Services.AddSerilog(configuration =>
-    {
-        configuration.MinimumLevel.Information()
-            .WriteTo.Console()
-            .WriteTo.Seq("http://oteltester.seq:5341", apiKey: "x")
-            .Enrich.FromLogContext();
-    });
-}
+    configuration
+        .MinimumLevel.Information()
+        .Enrich.FromLogContext()
+        // regular logs
+        .WriteTo.Console()
+        .WriteTo.Seq("http://oteltester.seq:5341", apiKey: "x")
+        // also send logs to OpenTelemetry
+        .WriteTo.OpenTelemetry(o =>
+        {
+            o.ResourceAttributes = new Dictionary<string, object>
+            {
+                // https://opentelemetry.io/docs/specs/otel/semantic-conventions/
+                ["service.name"] = DiagnosticsConfig.ServiceName,
+                ["service.version"] =
+                    sp.GetRequiredService<VersionProvider>().Version,
+            };
+        });
+});
+
 
 var app = builder.Build();
-if (settings.LogProvider.HasFlag(LogProvider.Serilog))
-{
-    app.UseSerilogRequestLogging();
-}
+app.UseSerilogRequestLogging();
 
 var sampleTodos = new Todo[]
 {
