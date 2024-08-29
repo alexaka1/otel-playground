@@ -5,7 +5,7 @@ Accept: application/json
 
 ###
 
-GET {{OtelTester_HostAddress}}/todos/1
+GET {{OtelTester_HostAddress}}/todos/2
 Accept: application/json
 
 ###
