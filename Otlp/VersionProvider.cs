@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace OtelTester;
+namespace OtelTester.Otlp;
 
 public class VersionProvider
 {

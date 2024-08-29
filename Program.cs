@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using OtelTester;
+using OtelTester.Otlp;
 using Serilog;
 using Serilog.Debugging;
 

@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using OpenTelemetry.Resources;
 
-namespace OtelTester;
+namespace OtelTester.Otlp;
 
 public class OtlpResourceDetector(VersionProvider versionProvider, IHostEnvironment environment)
     : IResourceDetector

@@ -1,6 +1,6 @@
 using System.Diagnostics.Metrics;
 
-namespace OtelTester;
+namespace OtelTester.Otlp;
 
 public static class DiagnosticsConfig
 {
