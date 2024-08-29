@@ -13,6 +13,7 @@ services:
       - "5270:8080"
     <<: *default-network
     environment:
+      - OTEL_SERVICE_NAME=OtelTester
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://oteltester.dashboard:18889
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:

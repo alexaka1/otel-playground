@@ -18,12 +18,12 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 builder.Services.AddMeters();
+builder.Services.AddSingleton<OtlpResourceDetector>();
 
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resourceBuilder =>
-        // no DI here :(
-        resourceBuilder.AddService(DiagnosticsConfig.ServiceName,
-            serviceVersion: version.Version))
+        resourceBuilder.AddEnvironmentVariableDetector()
+            .AddDetector(sp => sp.GetRequiredService<OtlpResourceDetector>()))
     .WithMetrics(metrics =>
     {
         metrics.AddAspNetCoreInstrumentation()
@@ -46,6 +46,7 @@ SelfLog.Enable(Console.Out);
 // regular Serilog logging
 builder.Services.AddSerilog((sp, configuration) =>
 {
+    var resource = sp.GetRequiredService<OtlpResourceDetector>().Detect();
     configuration
         .MinimumLevel.Information()
         .Enrich.FromLogContext()
@@ -55,12 +56,9 @@ builder.Services.AddSerilog((sp, configuration) =>
         // also send logs to OpenTelemetry, optional
         .WriteTo.OpenTelemetry(o =>
         {
-            o.ResourceAttributes = new Dictionary<string, object>
+            o.ResourceAttributes = new Dictionary<string, object>(resource.Attributes)
             {
                 // https://opentelemetry.io/docs/specs/otel/semantic-conventions/
-                ["service.name"] = DiagnosticsConfig.ServiceName,
-                ["service.version"] =
-                    sp.GetRequiredService<VersionProvider>().Version,
             };
         });
 });
