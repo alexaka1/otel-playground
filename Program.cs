@@ -4,6 +4,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using OtelTester;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -12,6 +13,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolverChain.Insert(0,
         AppJsonSerializerContext.Default);
 });
+
+builder.Services.AddOptions<Settings>()
+    .Bind(builder.Configuration.GetSection(Settings.Key));
 
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resourceBuilder =>
@@ -27,14 +31,18 @@ builder.Services.AddOpenTelemetry()
         tracing.AddOtlpExporter();
     })
     ;
-
-builder.Logging.AddOpenTelemetry(options =>
+builder.Logging.ClearProviders();
+var settings = builder.Configuration.GetValue<Settings>(Settings.Key) ?? throw new InvalidOperationException("Settings not found");
+if (settings.LogProvider.HasFlag(LogProvider.OpenTelemetry))
 {
-    options.IncludeScopes = true;
-    options.IncludeFormattedMessage = true;
-    options.ParseStateValues = true;
-    options.AddOtlpExporter();
-});
+    builder.Logging.AddOpenTelemetry(options =>
+    {
+        options.IncludeScopes = true;
+        options.IncludeFormattedMessage = true;
+        options.ParseStateValues = true;
+        options.AddOtlpExporter();
+    });
+}
 
 var app = builder.Build();
 
