@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -49,16 +50,21 @@ var sampleTodos = new Todo[]
 var todosApi = app.MapGroup("/todos");
 todosApi.MapGet("/", (ILogger<Program> logger) =>
 {
-    logger.LogInformation("Hello World {Length}", sampleTodos.Length);
+    logger.LogInformation("Todo length: {Length}", sampleTodos.Length);
     return sampleTodos.AsEnumerable();
 });
 todosApi.MapGet("/{id:int}",
     IResult (int id, ILogger<Program> logger) =>
     {
-        logger.LogInformation("Hello World {Id}", id);
-        return sampleTodos.FirstOrDefault(a => a.Id == id) is { } todo ?
-            TypedResults.Json(todo, AppJsonSerializerContext.Default.Todo) :
-            TypedResults.NotFound();
+        logger.LogInformation("Called with id: {Id}", id);
+        var todo = sampleTodos.FirstOrDefault(a => a.Id == id);
+        if (todo is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        logger.LogInformation("Returned: {@Todo}", todo);
+        return TypedResults.Json(todo, AppJsonSerializerContext.Default.Todo);
     });
 
 app.Run();
@@ -69,7 +75,9 @@ public record Todo(
     DateOnly? DueBy = null,
     bool IsComplete = false);
 
+[JsonSourceGenerationOptions(JsonSerializerDefaults.Web,
+    GenerationMode = JsonSourceGenerationMode.Serialization)]
 [JsonSerializable(typeof(Todo[]))]
-internal partial class AppJsonSerializerContext : JsonSerializerContext
-{
-}
+[JsonSerializable(typeof(Todo))]
+[JsonSerializable(typeof(IEnumerable<Todo>))]
+internal partial class AppJsonSerializerContext : JsonSerializerContext;

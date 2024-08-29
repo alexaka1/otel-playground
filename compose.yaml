@@ -1,8 +1,28 @@
-﻿services:
+﻿x-networks: &default-network
+  networks:
+    - otel
+services:
   oteltester:
     image: oteltester
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
     ports:
       - "5270:8080"
+    <<: *default-network
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://oteltester.dashboard:18889
+    depends_on:
+      - oteltester.dashboard
+  oteltester.dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
+    ports:
+      - "18888:18888"
+    <<: *default-network
+    environment:
+      # This should be local only
+      - DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true
+networks:
+  otel:

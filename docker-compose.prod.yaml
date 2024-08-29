@@ -1,0 +1,5 @@
+services:
+  oteltester:
+    image: oteltester-aot
+    build:
+      dockerfile: prod.Dockerfile
