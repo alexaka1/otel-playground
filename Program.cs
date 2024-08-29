@@ -26,13 +26,17 @@ builder.Services.AddOpenTelemetry()
             serviceVersion: version.Version))
     .WithMetrics(metrics =>
     {
-        metrics.AddAspNetCoreInstrumentation();
+        metrics.AddAspNetCoreInstrumentation()
+            .AddProcessInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddHttpClientInstrumentation();
         metrics.AddMeter(DiagnosticsConfig.MyMeter);
         metrics.AddOtlpExporter();
     })
     .WithTracing(tracing =>
     {
-        tracing.AddAspNetCoreInstrumentation();
+        tracing.AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation();
         tracing.AddOtlpExporter();
     })
     ;
