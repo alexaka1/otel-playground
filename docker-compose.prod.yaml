@@ -3,3 +3,5 @@ services:
     image: oteltester-aot
     build:
       dockerfile: prod.Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production

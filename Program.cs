@@ -75,9 +75,7 @@ public record Todo(
     DateOnly? DueBy = null,
     bool IsComplete = false);
 
-[JsonSourceGenerationOptions(JsonSerializerDefaults.Web,
-    GenerationMode = JsonSourceGenerationMode.Serialization)]
+[JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
 [JsonSerializable(typeof(Todo[]))]
-[JsonSerializable(typeof(Todo))]
 [JsonSerializable(typeof(IEnumerable<Todo>))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext;
